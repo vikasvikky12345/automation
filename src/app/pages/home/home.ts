@@ -8,7 +8,7 @@ import { environment } from '../../../environments/environment';
   selector: 'app-home',
   imports: [RouterLink],
   template: `
-    <h1>{{ appName }}</h1>
+    <h1>{{ appName }} test</h1>
     <dl>
       <dt>Platform</dt><dd>{{ platform }}</dd>
       <dt>Build</dt><dd>{{ buildId }}</dd>
