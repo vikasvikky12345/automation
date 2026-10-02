@@ -17,7 +17,7 @@ import { APP_CONFIG } from '../../core/app-config';
       <dt>Build</dt><dd>{{ buildId }}</dd>
       <dt>Launches</dt><dd>{{ launches() }}</dd>
     </dl>
-    <a routerLink="/about">About</a>
+    <a routerLink="/about">About testß</a>
   `,
 })
 export class Home implements OnInit {
