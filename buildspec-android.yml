@@ -1,0 +1,57 @@
+version: 0.2
+
+# Builds a signed Android App Bundle (.aab) for the Capacitor app.
+# Runs on the custom image built from ci/android-builder.Dockerfile (no privileged mode needed).
+#
+# SSM Parameter Store (SecureString, Standard tier = free):
+#   /automate/android/keystore-base64    base64 of the upload keystore (.jks)
+#   /automate/android/keystore-password  keystore password (PKCS12: same as the key password)
+
+env:
+  variables:
+    APP_ENV: prod
+    API_URL: https://api.example.com
+    VERSION_NAME: "1.0.0"
+    ANDROID_KEY_ALIAS: upload
+  parameter-store:
+    KEYSTORE_BASE64: /automate/android/keystore-base64
+    ANDROID_KEYSTORE_PASSWORD: /automate/android/keystore-password
+    ANDROID_KEY_PASSWORD: /automate/android/keystore-password
+
+phases:
+  pre_build:
+    commands:
+      - COMMIT=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      # Build number only ever increases, which is what Play requires for versionCode.
+      - export VERSION_CODE=$CODEBUILD_BUILD_NUMBER
+      - echo "Building $VERSION_NAME ($VERSION_CODE) from $COMMIT for $APP_ENV"
+      - echo "$KEYSTORE_BASE64" | base64 -d > /tmp/upload.jks
+      - export ANDROID_KEYSTORE_PATH=/tmp/upload.jks
+      - npm ci --no-audit --no-fund
+  build:
+    commands:
+      # Mobile config is baked in at build time (no container env vars on a phone).
+      - printf '{\n  "appEnv": "%s",\n  "apiUrl": "%s"\n}\n' "$APP_ENV" "$API_URL" > public/config.json
+      - sed -i "s/buildId: '.*'/buildId: '${COMMIT}'/" src/environments/environment.ts
+      - npm run build
+      - npx cap sync android
+      - (cd android && ./gradlew bundleRelease --no-daemon --stacktrace)
+  post_build:
+    commands:
+      - AAB=automate-$VERSION_NAME-$VERSION_CODE-$COMMIT.aab
+      - mkdir -p dist-android
+      - cp android/app/build/outputs/bundle/release/app-release.aab dist-android/$AAB
+      # Fail the build if the bundle is not signed with the upload key.
+      - jarsigner -verify dist-android/$AAB | grep -q "jar verified"
+      - ls -lh dist-android
+      - rm -f /tmp/upload.jks
+
+artifacts:
+  files:
+    - dist-android/*.aab
+  discard-paths: yes
+
+cache:
+  paths:
+    - /root/.gradle/caches/**/*
+    - /root/.gradle/wrapper/**/*
