@@ -16,5 +16,6 @@ RUN sed -i "s/buildId: '.*'/buildId: '${BUILD_ID}'/" src/environments/environmen
 # ---- Stage 2: serve with nginx ----
 FROM public.ecr.aws/docker/library/nginx:alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
 COPY --from=build /app/dist/cicd-mobile/browser /usr/share/nginx/html
 EXPOSE 80
