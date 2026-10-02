@@ -1,8 +1,9 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { environment } from '../../../environments/environment';
+import { APP_CONFIG } from '../../core/app-config';
 
 @Component({
   selector: 'app-home',
@@ -10,6 +11,8 @@ import { environment } from '../../../environments/environment';
   template: `
     <h1>{{ appName }} test 2</h1>
     <dl>
+      <dt>Environment</dt><dd>{{ config.appEnv }}</dd>
+      <dt>API</dt><dd>{{ config.apiUrl || '-' }}</dd>
       <dt>Platform</dt><dd>{{ platform }}</dd>
       <dt>Build</dt><dd>{{ buildId }}</dd>
       <dt>Launches</dt><dd>{{ launches() }}</dd>
@@ -18,6 +21,7 @@ import { environment } from '../../../environments/environment';
   `,
 })
 export class Home implements OnInit {
+  protected readonly config = inject(APP_CONFIG);
   protected readonly appName = environment.appName;
   protected readonly buildId = environment.buildId;
   protected readonly platform = Capacitor.getPlatform();
