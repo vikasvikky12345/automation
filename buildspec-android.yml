@@ -31,8 +31,11 @@ phases:
   build:
     commands:
       # Mobile config is baked in at build time (no container env vars on a phone).
-      - printf '{\n  "appEnv": "%s",\n  "apiUrl": "%s"\n}\n' "$APP_ENV" "$API_URL" > public/config.json
-      - sed -i "s/buildId: '.*'/buildId: '${COMMIT}'/" src/environments/environment.ts
+      # Block scalars (|) because these commands contain ": ", which YAML would parse as a key.
+      - |
+        printf '{\n  "appEnv": "%s",\n  "apiUrl": "%s"\n}\n' "$APP_ENV" "$API_URL" > public/config.json
+      - |
+        sed -i "s/buildId: '.*'/buildId: '${COMMIT}'/" src/environments/environment.ts
       - npm run build
       - npx cap sync android
       - (cd android && ./gradlew bundleRelease --no-daemon --stacktrace)
